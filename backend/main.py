@@ -5,8 +5,8 @@ from app.core.database import engine
 from app.models import Base
 from app.routers import auth, tasks, comments, websocket
 
-# 建立資料庫表格
-Base.metadata.create_all(bind=engine)
+# 延遲資料庫表格建立，避免在應用啟動時阻塞
+# Base.metadata.create_all(bind=engine)
 
 # 建立 FastAPI 應用
 app = FastAPI(
@@ -29,6 +29,16 @@ app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 app.include_router(comments.router, tags=["comments"])
 app.include_router(websocket.router, tags=["websocket"])
+
+# 應用啟動事件 - 初始化資料庫表格
+@app.on_event("startup")
+async def startup_event():
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ 資料庫表格初始化完成")
+    except Exception as e:
+        print(f"⚠️  資料庫表格初始化失敗: {e}")
+        # 不終止應用啟動，允許健康檢查通過
 
 @app.get("/")
 async def root():

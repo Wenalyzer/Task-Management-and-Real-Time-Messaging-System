@@ -42,10 +42,10 @@ services:
       - task-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      interval: 15s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
 
   # Next.js 15.5.2 前端服務
   frontend:
