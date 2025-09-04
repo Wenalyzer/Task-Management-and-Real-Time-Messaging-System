@@ -3,12 +3,9 @@
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
 
--- 確保資料庫存在
+-- 確保資料庫存在（適應不同環境的資料庫名稱）
 CREATE DATABASE IF NOT EXISTS task_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS test_taskmanager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- 使用資料庫
-USE task_management;
-
--- 授予用戶權限（FastAPI 會自動創建表格）
-GRANT ALL PRIVILEGES ON task_management.* TO 'taskuser'@'%';
-FLUSH PRIVILEGES;
+-- 用戶權限由 Docker MySQL entrypoint 自動處理
+-- 無需手動授權，避免環境差異問題
