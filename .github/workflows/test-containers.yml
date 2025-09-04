@@ -32,18 +32,10 @@ jobs:
           NEXT_PUBLIC_API_URL=http://localhost:8000
           EOF
 
-      - name: 🏗️ Build all Docker images
+      - name: 🏗️ Build and start all services
         run: |
-          echo "Building backend image..."
-          docker build -t task-backend:test ./backend
-          
-          echo "Building frontend image..."
-          docker build -t task-frontend:test ./frontend
-
-      - name: 🚀 Start all services
-        run: |
-          echo "Starting services with docker-compose..."
-          docker-compose up -d
+          echo "Building and starting services with docker-compose..."
+          docker-compose up -d --build
           
           echo "Waiting for services to initialize..."
           sleep 45
