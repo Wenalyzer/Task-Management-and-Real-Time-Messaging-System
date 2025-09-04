@@ -8,8 +8,6 @@ interface TokenExpirationState {
   timeLeft: number; // 剩餘時間（秒）
 }
 
-let tokenUpdateTrigger = 0;
-
 export const useTokenExpiration = () => {
   const { logout, isAuthenticated } = useAuth();
   const [state, setState] = useState<TokenExpirationState>({

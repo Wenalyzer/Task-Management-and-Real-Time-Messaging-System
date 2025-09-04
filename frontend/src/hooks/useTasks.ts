@@ -17,8 +17,11 @@ export const useTasks = () => {
     try {
       const response = await tasksAPI.getTasks(status);
       setTasks(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || '取得任務失敗');
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail 
+        : '取得任務失敗';
+      setError(errorMessage || '取得任務失敗');
       console.error('取得任務時發生錯誤:', err);
     } finally {
       setLoading(false);
@@ -40,8 +43,11 @@ export const useTasks = () => {
       await fetchTasks();
       await fetchStats();
       return response.data;
-    } catch (err: any) {
-      setError(err.response?.data?.detail || '建立任務失敗');
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail 
+        : '建立任務失敗';
+      setError(errorMessage || '建立任務失敗');
       throw err;
     }
   }, [fetchTasks, fetchStats]);
@@ -52,8 +58,11 @@ export const useTasks = () => {
       await fetchTasks();
       await fetchStats();
       return response.data;
-    } catch (err: any) {
-      setError(err.response?.data?.detail || '更新任務失敗');
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail 
+        : '更新任務失敗';
+      setError(errorMessage || '更新任務失敗');
       throw err;
     }
   }, [fetchTasks, fetchStats]);
@@ -63,8 +72,11 @@ export const useTasks = () => {
       await tasksAPI.deleteTask(id);
       await fetchTasks();
       await fetchStats();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || '刪除任務失敗');
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail 
+        : '刪除任務失敗';
+      setError(errorMessage || '刪除任務失敗');
       throw err;
     }
   }, [fetchTasks, fetchStats]);

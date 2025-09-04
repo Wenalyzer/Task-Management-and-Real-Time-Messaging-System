@@ -30,21 +30,23 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push('/tasks');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('登入錯誤:', error);
       
       let errorMessage = '登入失敗，請檢查您的電子郵件和密碼';
       
-      if (error.response?.data?.detail) {
-        const detail = error.response.data.detail;
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { detail?: unknown } } };
+        const detail = axiosError.response?.data?.detail;
         if (Array.isArray(detail)) {
           // 處理Pydantic驗證錯誤
           errorMessage = detail.map(err => err.msg || err.type || '驗證失敗').join(', ');
         } else if (typeof detail === 'string') {
           errorMessage = detail;
         }
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        const errorWithMessage = error as { message: string };
+        errorMessage = errorWithMessage.message;
       }
       
       setError(errorMessage);

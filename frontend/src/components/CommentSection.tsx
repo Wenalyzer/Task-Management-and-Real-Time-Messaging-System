@@ -27,7 +27,7 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
   const [, forceUpdate] = useState({});
   
   const commentsEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // WebSocket 連接
   const {
@@ -102,7 +102,7 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
         const response = await commentsAPI.getComments(taskId);
         setComments(response.data);
         scrollToBottom();
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError('載入留言失敗');
         console.error('載入留言時發生錯誤:', err);
       } finally {

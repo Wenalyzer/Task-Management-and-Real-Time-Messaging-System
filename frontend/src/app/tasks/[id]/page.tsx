@@ -50,8 +50,11 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
     try {
       const response = await tasksAPI.getTask(parseInt(taskId));
       setTask(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || '取得任務詳情失敗');
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail 
+        : '取得任務詳情失敗';
+      setError(errorMessage || '取得任務詳情失敗');
     } finally {
       setLoading(false);
     }
