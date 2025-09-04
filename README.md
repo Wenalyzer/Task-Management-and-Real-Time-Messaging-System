@@ -180,32 +180,3 @@ CREATE DATABASE taskdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 1. 用兩個不同的瀏覽器窗口登入不同帳戶
 2. 在任務詳情頁面，一個使用者發送留言
 3. 另一個使用者的頁面會立即顯示新留言（無需重新整理）
-
-## 項目結構
-
-```
-├── backend/                 # FastAPI 後端
-│   ├── app/
-│   │   ├── models/         # 資料庫模型
-│   │   ├── schemas/        # Pydantic 驗證模型
-│   │   ├── routers/        # API 路由
-│   │   ├── websocket/      # WebSocket 管理
-│   │   └── core/           # 核心配置
-│   ├── requirements.txt
-│   └── main.py
-├── frontend/               # Next.js 前端
-│   ├── src/
-│   │   ├── app/           # App Router 頁面
-│   │   ├── components/    # React 組件
-│   │   ├── contexts/      # Context API
-│   │   ├── hooks/         # 自定義 Hooks
-│   │   ├── lib/           # 工具函數
-│   │   └── types/         # TypeScript 類型
-│   ├── package.json
-│   └── tailwind.config.js
-└── README.md
-```
-
-## 作者
-
-這個項目是為了展示全端開發技能而建立，整合了現代化的前後端技術棧和即時通訊功能。

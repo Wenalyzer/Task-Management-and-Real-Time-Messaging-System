@@ -15,6 +15,17 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
+      - name: 🔍 Debug file structure
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Root files ==="
+          ls -la
+          echo "=== Frontend directory ==="
+          ls -la frontend/
+          echo "=== Backend directory ==="  
+          ls -la backend/
+
       - name: 🔧 Create test environment file
         run: |
           cat > .env << EOF
