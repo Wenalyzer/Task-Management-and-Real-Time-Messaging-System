@@ -18,11 +18,11 @@ services:
     networks:
       - task-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$MYSQL_USER", "-p$MYSQL_PASSWORD"]
       timeout: 20s
       retries: 10
       interval: 10s
-      start_period: 30s
+      start_period: 40s
 
   # FastAPI 後端服務
   backend:
