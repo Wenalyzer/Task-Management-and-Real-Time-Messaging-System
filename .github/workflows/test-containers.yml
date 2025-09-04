@@ -34,8 +34,8 @@ jobs:
 
       - name: 🏗️ Build and start all services
         run: |
-          echo "Building and starting services with docker-compose..."
-          docker-compose up -d --build
+          echo "Building and starting services with docker compose..."
+          docker compose up -d --build
           
           echo "Waiting for services to initialize..."
           sleep 45
@@ -43,24 +43,24 @@ jobs:
       - name: 📊 Check container status
         run: |
           echo "=== Container Status ==="
-          docker-compose ps
+          docker compose ps
           
           echo -e "\n=== Container Logs ==="
           echo "Backend logs:"
-          docker-compose logs backend
+          docker compose logs backend
           
           echo -e "\nFrontend logs:"
-          docker-compose logs frontend
+          docker compose logs frontend
           
           echo -e "\nMySQL logs:"
-          docker-compose logs mysql
+          docker compose logs mysql
 
       - name: 🏥 Health checks
         run: |
           echo "Testing backend health endpoint..."
           curl -f http://localhost:8000/health || {
             echo "Backend health check failed!"
-            docker-compose logs backend
+            docker compose logs backend
             exit 1
           }
           
@@ -73,7 +73,7 @@ jobs:
           echo "Testing frontend..."
           curl -f http://localhost:3000 || {
             echo "Frontend health check failed!"
-            docker-compose logs frontend
+            docker compose logs frontend
             exit 1
           }
 
@@ -94,7 +94,7 @@ jobs:
         if: always()
         run: |
           echo "Stopping and removing containers..."
-          docker-compose down -v
+          docker compose down -v
           
           echo "Cleaning up Docker resources..."
           docker system prune -f
