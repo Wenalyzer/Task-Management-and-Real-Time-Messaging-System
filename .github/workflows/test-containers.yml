@@ -26,8 +26,10 @@ jobs:
           MYSQL_PASSWORD=testpass123
           
           # Backend Configuration (test values)
-          SECRET_KEY=test-secret-key-for-github-actions
-          ACCESS_TOKEN_EXPIRE_MINUTES=30
+          SECRET_KEY=test-secret-key-for-github-actions-at-least-32-characters-long
+          DATABASE_URL=mysql+pymysql://testuser:testpass123@mysql:3306/test_taskmanager
+          BACKEND_CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000","http://frontend:3000"]
+          ENVIRONMENT=production
           
           # Frontend Configuration
           NEXT_PUBLIC_API_URL=http://localhost:8000

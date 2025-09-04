@@ -28,7 +28,8 @@ class Settings(BaseSettings):
     timezone: str = "Asia/Taipei"
     
     class Config:
-        env_file = "../.env"
+        # 在Docker容器中，.env檔案會被複製到應用根目錄
+        env_file = ".env"
         case_sensitive = False
 
 
