@@ -15,7 +15,7 @@ cryptography==45.0.6
 
 # 工具庫
 python-multipart==0.0.12
-pydantic==2.11.7
+pydantic[email]==2.11.7
 python-dotenv==1.1.1
 websockets==15.0.1
 

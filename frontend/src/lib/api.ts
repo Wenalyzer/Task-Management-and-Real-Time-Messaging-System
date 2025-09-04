@@ -35,6 +35,11 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // 不要對登入API的401錯誤進行處理，讓登入頁面正常顯示錯誤訊息
+      if (originalRequest.url?.includes('/auth/login')) {
+        return Promise.reject(error);
+      }
+      
       originalRequest._retry = true;
       
       const refreshToken = Cookies.get('refresh_token');

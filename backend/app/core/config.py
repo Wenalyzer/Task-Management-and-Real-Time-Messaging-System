@@ -1,14 +1,15 @@
 from pydantic_settings import BaseSettings
 from typing import List
+from pydantic import Field
 import os
 
 
 class Settings(BaseSettings):
-    # 資料庫
-    database_url: str = "mysql+pymysql://root:password@localhost:3306/taskmanager"
+    # 資料庫 - 必須從環境變數載入
+    database_url: str = Field(..., description="Database connection URL")
     
-    # JWT - 這些應該從環境變數載入，不可硬編碼到生產環境
-    secret_key: str = "your-super-secret-jwt-key-change-in-production"
+    # JWT - 安全設定，secret_key 必須從環境變數載入
+    secret_key: str = Field(..., min_length=32, description="JWT secret key (minimum 32 characters)")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
@@ -27,7 +28,7 @@ class Settings(BaseSettings):
     timezone: str = "Asia/Taipei"
     
     class Config:
-        env_file = ".env"
+        env_file = "../.env"
         case_sensitive = False
 
 
