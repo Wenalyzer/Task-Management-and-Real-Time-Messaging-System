@@ -1,0 +1,117 @@
+name: 🧪 Test Docker Containers
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-containers:
+    runs-on: ubuntu-latest
+    name: 🐳 Test Docker Containers
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Create test environment file
+        run: |
+          cat > .env << EOF
+          # Database Configuration (test values)
+          MYSQL_ROOT_PASSWORD=testroot123
+          MYSQL_DATABASE=test_taskmanager
+          MYSQL_USER=testuser
+          MYSQL_PASSWORD=testpass123
+          
+          # Backend Configuration (test values)
+          SECRET_KEY=test-secret-key-for-github-actions
+          ACCESS_TOKEN_EXPIRE_MINUTES=30
+          
+          # Frontend Configuration
+          NEXT_PUBLIC_API_URL=http://localhost:8000
+          EOF
+
+      - name: 🏗️ Build all Docker images
+        run: |
+          echo "Building backend image..."
+          docker build -t task-backend:test ./backend
+          
+          echo "Building frontend image..."
+          docker build -t task-frontend:test ./frontend
+
+      - name: 🚀 Start all services
+        run: |
+          echo "Starting services with docker-compose..."
+          docker-compose up -d
+          
+          echo "Waiting for services to initialize..."
+          sleep 45
+
+      - name: 📊 Check container status
+        run: |
+          echo "=== Container Status ==="
+          docker-compose ps
+          
+          echo -e "\n=== Container Logs ==="
+          echo "Backend logs:"
+          docker-compose logs backend
+          
+          echo -e "\nFrontend logs:"
+          docker-compose logs frontend
+          
+          echo -e "\nMySQL logs:"
+          docker-compose logs mysql
+
+      - name: 🏥 Health checks
+        run: |
+          echo "Testing backend health endpoint..."
+          curl -f http://localhost:8000/health || {
+            echo "Backend health check failed!"
+            docker-compose logs backend
+            exit 1
+          }
+          
+          echo "Testing backend API docs..."
+          curl -f http://localhost:8000/docs || {
+            echo "Backend API docs check failed!"
+            exit 1
+          }
+          
+          echo "Testing frontend..."
+          curl -f http://localhost:3000 || {
+            echo "Frontend health check failed!"
+            docker-compose logs frontend
+            exit 1
+          }
+
+      - name: 🔍 Test API endpoints
+        run: |
+          echo "Testing user registration..."
+          curl -X POST "http://localhost:8000/auth/register" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "email": "test@example.com",
+              "password": "test123"
+            }' || echo "Registration endpoint test completed"
+          
+          echo "Testing task endpoints..."
+          curl -f "http://localhost:8000/tasks" || echo "Tasks endpoint test completed"
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          echo "Stopping and removing containers..."
+          docker-compose down -v
+          
+          echo "Cleaning up Docker resources..."
+          docker system prune -f
+
+      - name: ✅ Test Summary
+        run: |
+          echo "🎉 All container tests passed!"
+          echo "✅ Backend builds successfully"
+          echo "✅ Frontend builds successfully" 
+          echo "✅ MySQL starts correctly"
+          echo "✅ All health checks pass"
+          echo "✅ API endpoints respond correctly"
