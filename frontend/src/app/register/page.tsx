@@ -1,38 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import { registerAction, loginAction } from '@/lib/actions/auth';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const { register } = useAuth();
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
     // 基本驗證 - 使用更嚴格的email regex
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
       setError('請輸入正確的電子郵件，例如：user@gmail.com');
-      setLoading(false);
       return;
     }
-
 
     // 密碼長度驗證
     if (password.length < 6) {
       setError('密碼至少6字元');
-      setLoading(false);
       return;
     }
 
@@ -41,42 +35,32 @@ export default function RegisterPage() {
     const hasLetter = /[a-zA-Z]/.test(password);
     if (!hasNumber || !hasLetter) {
       setError('密碼需包含數字和字母');
-      setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setError('密碼確認不匹配');
-      setLoading(false);
       return;
     }
 
-    try {
-      await register(email, password);
-      router.push('/tasks');
-    } catch (error: unknown) {
-      console.error('註冊錯誤:', error);
+    startTransition(async () => {
+      // 先註冊
+      const registerResult = await registerAction(email, password);
       
-      let errorMessage = '註冊失敗，請稍後再試';
-      
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data?: { detail?: unknown } } };
-        const detail = axiosError.response?.data?.detail;
-        if (Array.isArray(detail)) {
-          // 處理Pydantic驗證錯誤
-          errorMessage = detail.map(err => err.msg || err.type || '驗證失敗').join(', ');
-        } else if (typeof detail === 'string') {
-          errorMessage = detail;
+      if (registerResult.success) {
+        // 註冊成功後自動登入
+        const loginResult = await loginAction(email, password);
+        
+        if (loginResult.success) {
+          router.push('/tasks');
+          router.refresh();
+        } else {
+          setError('註冊成功但登入失敗，請手動登入');
         }
-      } else if (error && typeof error === 'object' && 'message' in error) {
-        const errorWithMessage = error as { message: string };
-        errorMessage = errorWithMessage.message;
+      } else {
+        setError(registerResult.error);
       }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -158,10 +142,10 @@ export default function RegisterPage() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isPending}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '註冊中...' : '註冊'}
+              {isPending ? '註冊中...' : '註冊'}
             </button>
           </div>
         </form>

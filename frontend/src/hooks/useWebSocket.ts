@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Comment, WebSocketMessage } from '@/types';
-import { getAuthToken } from '@/lib/api';
+import { getWebSocketTokenAction } from '@/lib/actions/auth';
 
 /**
  * WebSocket hook 配置介面
@@ -34,7 +34,7 @@ export const useWebSocket = ({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     // 防止重複連線
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       return;
@@ -45,15 +45,20 @@ export const useWebSocket = ({
       return;
     }
 
-    const token = getAuthToken();
-    if (!token) {
+    // 通過Server Action獲取token
+    const tokenResult = await getWebSocketTokenAction();
+    if (!tokenResult.success) {
       onError?.('未找到認證令牌');
       return;
     }
 
     try {
       setConnectionStatus('connecting');
-      const wsUrl = `ws://localhost:8000/ws/tasks/${taskId}?token=${token}`;
+      // 使用環境變數或默認值構建WebSocket URL
+      const wsBaseUrl = process.env.NODE_ENV === 'production' 
+        ? `wss://${window.location.host}/ws` 
+        : 'ws://localhost:8000/ws';
+      const wsUrl = `${wsBaseUrl}/tasks/${taskId}?token=${tokenResult.token}`;
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {

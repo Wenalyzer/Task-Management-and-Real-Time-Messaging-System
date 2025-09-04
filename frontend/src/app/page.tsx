@@ -1,26 +1,13 @@
-'use client';
-
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { redirect } from 'next/navigation';
+import { getCurrentUserAction } from '@/lib/actions/auth';
 import Link from 'next/link';
 
-export default function Home() {
-  const { isAuthenticated, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      router.push('/tasks');
-    }
-  }, [isAuthenticated, loading, router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">載入中...</div>
-      </div>
-    );
+export default async function Home() {
+  // 檢查用戶是否已登入，如果是則重定向到任務頁面
+  const userResult = await getCurrentUserAction();
+  
+  if (userResult.success) {
+    redirect('/tasks');
   }
 
   return (

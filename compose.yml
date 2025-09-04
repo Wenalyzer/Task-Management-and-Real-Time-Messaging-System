@@ -10,12 +10,12 @@ services:
     env_file:
       - .env
     environment:
-      - TZ=Asia/Taipei
+      - TZ=${TZ}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone='+08:00'
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone='${MYSQL_TIMEZONE}'
     networks:
       - task-network
     healthcheck:
@@ -34,8 +34,10 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - TZ=${TZ}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT}:8000"
     depends_on:
       mysql:
         condition: service_healthy
@@ -57,8 +59,10 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - TZ=${TZ}
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT}:3000"
     depends_on:
       backend:
         condition: service_healthy

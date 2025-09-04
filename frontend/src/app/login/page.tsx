@@ -1,58 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import { loginAction } from '@/lib/actions/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const { login } = useAuth();
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(''); // 清空之前的錯誤訊息
 
     // 基本驗證 - 使用更嚴格的email regex
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
       setError('請輸入正確的電子郵件，例如：user@gmail.com');
-      setLoading(false);
       return;
     }
 
-    try {
-      await login(email, password);
-      router.push('/tasks');
-    } catch (error: unknown) {
-      console.error('登入錯誤:', error);
+    startTransition(async () => {
+      const result = await loginAction(email, password);
       
-      let errorMessage = '登入失敗，請檢查您的電子郵件和密碼';
-      
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data?: { detail?: unknown } } };
-        const detail = axiosError.response?.data?.detail;
-        if (Array.isArray(detail)) {
-          // 處理Pydantic驗證錯誤
-          errorMessage = detail.map(err => err.msg || err.type || '驗證失敗').join(', ');
-        } else if (typeof detail === 'string') {
-          errorMessage = detail;
-        }
-      } else if (error && typeof error === 'object' && 'message' in error) {
-        const errorWithMessage = error as { message: string };
-        errorMessage = errorWithMessage.message;
+      if (result.success) {
+        router.push('/tasks');
+        router.refresh(); // 重新載入頁面以更新認證狀態
+      } else {
+        setError(result.error);
       }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -117,10 +97,10 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isPending}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '登入中...' : '登入'}
+              {isPending ? '登入中...' : '登入'}
             </button>
           </div>
         </form>

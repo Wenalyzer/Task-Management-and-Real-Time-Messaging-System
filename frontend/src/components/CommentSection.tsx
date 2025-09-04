@@ -1,13 +1,20 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
 import { Comment } from '@/types';
-import { commentsAPI } from '@/lib/api';
+import { getCommentsAction } from '@/lib/actions/comments';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { useAuth } from '@/contexts/AuthContext';
+
+interface User {
+  id: number;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface CommentSectionProps {
   taskId: number;
+  user: User;
 }
 
 interface TypingUser {
@@ -15,12 +22,11 @@ interface TypingUser {
   userEmail: string;
 }
 
-export default function CommentSection({ taskId }: CommentSectionProps) {
-  const { user } = useAuth();
+export default function CommentSection({ taskId, user }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<string>('連接中...');
@@ -47,7 +53,7 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
       });
       scrollToBottom();
     },
-    onUserJoined: (userId, message) => {
+    onUserJoined: (_userId, message) => {
       console.log(message);
     },
     onUserTyping: (userId, userEmail, isTyping) => {
@@ -98,16 +104,20 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
   useEffect(() => {
     const loadComments = async () => {
       setLoading(true);
-      try {
-        const response = await commentsAPI.getComments(taskId);
-        setComments(response.data);
-        scrollToBottom();
-      } catch (err: unknown) {
-        setError('載入留言失敗');
-        console.error('載入留言時發生錯誤:', err);
-      } finally {
+      
+      startTransition(async () => {
+        const result = await getCommentsAction(taskId);
+        
+        if (result.success) {
+          setComments(result.data);
+          scrollToBottom();
+          setError(null);
+        } else {
+          setError(result.error);
+        }
+        
         setLoading(false);
-      }
+      });
     };
 
     loadComments();
@@ -128,8 +138,6 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
       return;
     }
 
-    setSending(true);
-    
     // 發送留言時立即停止打字狀態
     if (isConnected) {
       sendTypingStatus(false);
@@ -144,8 +152,6 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
       setNewComment('');
       setError(null);
     }
-    
-    setSending(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -310,10 +316,10 @@ export default function CommentSection({ taskId }: CommentSectionProps) {
           </div>
           <button
             type="submit"
-            disabled={!newComment.trim() || sending || !isConnected}
+            disabled={!newComment.trim() || isPending || !isConnected}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {sending ? '發送中...' : '發送留言'}
+            {isPending ? '發送中...' : '發送留言'}
           </button>
         </div>
       </form>
