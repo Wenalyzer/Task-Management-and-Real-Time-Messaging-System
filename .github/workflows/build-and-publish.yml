@@ -1,0 +1,176 @@
+name: 📦 Build and Publish to GHCR
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix:
+        service: [frontend, backend]
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🏗️ Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-compose-file:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 📝 Generate production docker-compose
+        run: |
+          cat > docker-compose.prod.yml << 'EOF'
+          services:
+            mysql:
+              image: mysql:8.4.6
+              container_name: task-mysql
+              restart: unless-stopped
+              environment:
+                - TZ=Asia/Taipei
+                - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+                - MYSQL_DATABASE=${MYSQL_DATABASE}
+                - MYSQL_USER=${MYSQL_USER}
+                - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+              ports:
+                - "3306:3306"
+              volumes:
+                - mysql_data:/var/lib/mysql
+              command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone='+08:00'
+              networks:
+                - task-network
+              healthcheck:
+                test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$MYSQL_USER", "-p$MYSQL_PASSWORD"]
+                timeout: 20s
+                retries: 10
+                interval: 10s
+                start_period: 40s
+
+            backend:
+              image: ghcr.io/${{ github.repository }}-backend:latest
+              container_name: task-backend
+              restart: unless-stopped
+              environment:
+                - SECRET_KEY=${SECRET_KEY}
+                - DATABASE_URL=${DATABASE_URL}
+                - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
+                - ENVIRONMENT=production
+              ports:
+                - "8000:8000"
+              depends_on:
+                mysql:
+                  condition: service_healthy
+              networks:
+                - task-network
+              healthcheck:
+                test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+                interval: 15s
+                timeout: 30s
+                retries: 5
+                start_period: 60s
+
+            frontend:
+              image: ghcr.io/${{ github.repository }}-frontend:latest
+              container_name: task-frontend
+              restart: unless-stopped
+              environment:
+                - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+              ports:
+                - "3000:3000"
+              depends_on:
+                backend:
+                  condition: service_healthy
+              networks:
+                - task-network
+
+          volumes:
+            mysql_data:
+              driver: local
+
+          networks:
+            task-network:
+              driver: bridge
+          EOF
+
+      - name: 📄 Upload compose file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-compose-prod
+          path: docker-compose.prod.yml
+
+  deployment-info:
+    runs-on: ubuntu-latest
+    needs: [build-and-push, create-compose-file]
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: 📋 Deployment Instructions
+        run: |
+          echo "🎉 Images built and pushed to GHCR successfully!"
+          echo ""
+          echo "📦 Published Images:"
+          echo "  Backend:  ghcr.io/${{ github.repository }}-backend:latest"
+          echo "  Frontend: ghcr.io/${{ github.repository }}-frontend:latest"
+          echo ""
+          echo "🚀 To deploy on your server:"
+          echo "  1. Download docker-compose.prod.yml from artifacts"
+          echo "  2. Create .env file with your production variables"
+          echo "  3. Run: docker compose -f docker-compose.prod.yml up -d"
+          echo ""
+          echo "🔑 Required environment variables:"
+          echo "  - MYSQL_ROOT_PASSWORD"
+          echo "  - MYSQL_DATABASE"
+          echo "  - MYSQL_USER"
+          echo "  - MYSQL_PASSWORD"
+          echo "  - SECRET_KEY"
+          echo "  - DATABASE_URL"
+          echo "  - BACKEND_CORS_ORIGINS"
+          echo "  - NEXT_PUBLIC_API_URL"
