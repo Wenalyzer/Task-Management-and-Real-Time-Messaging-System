@@ -2,8 +2,30 @@
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { BACKEND_URL } from '@/lib/config'
 
-const BACKEND_URL = process.env.BACKEND_INTERNAL_URL || 'http://task-backend:8000';
+// 統一的認證工具函數 - 所有認證都通過安全的 API 路由
+export async function getSecureAuthHeaders() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('access_token')?.value;
+    
+    if (!token) {
+      return { success: false, error: '未登入' };
+    }
+    
+    return { 
+      success: true, 
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    };
+  } catch (error) {
+    console.error('Get secure auth headers error:', error);
+    return { success: false, error: '認證服務暫時無法使用' };
+  }
+}
 
 export async function registerAction(email: string, password: string) {
   try {
@@ -96,22 +118,18 @@ export async function logoutAction() {
 
 export async function getCurrentUserAction() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('access_token')?.value;
-
-    if (!token) {
+    // 使用統一的安全認證架構
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
       return {
         success: false,
-        error: '未登入',
+        error: authResult.error || '認證失敗'
       };
     }
 
     const response = await fetch(`${BACKEND_URL}/auth/me`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: authResult.headers,
     });
 
     const data = await response.json();
@@ -136,27 +154,3 @@ export async function getCurrentUserAction() {
   }
 }
 
-export async function getWebSocketTokenAction() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('access_token')?.value;
-
-    if (!token) {
-      return {
-        success: false,
-        error: '未登入',
-      };
-    }
-
-    return {
-      success: true,
-      token: token,
-    };
-  } catch (error) {
-    console.error('Get WebSocket token error:', error);
-    return {
-      success: false,
-      error: '無法獲取認證令牌',
-    };
-  }
-}

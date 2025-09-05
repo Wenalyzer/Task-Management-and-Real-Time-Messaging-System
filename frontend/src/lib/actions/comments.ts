@@ -1,26 +1,19 @@
 'use server'
 
-import { cookies } from 'next/headers'
-
-const BACKEND_URL = process.env.BACKEND_INTERNAL_URL || 'http://task-backend:8000';
-
-async function getAuthHeaders() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('access_token')?.value;
-  
-  if (!token) {
-    throw new Error('未登入');
-  }
-
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-}
+import { getSecureAuthHeaders } from './auth'
+import { BACKEND_URL } from '@/lib/config'
 
 export async function getCommentsAction(taskId: number, skip: number = 0, limit: number = 100) {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+    const headers = authResult.headers;
     
     const response = await fetch(`${BACKEND_URL}/tasks/${taskId}/comments/?skip=${skip}&limit=${limit}`, {
       method: 'GET',
@@ -51,7 +44,15 @@ export async function getCommentsAction(taskId: number, skip: number = 0, limit:
 
 export async function createCommentAction(taskId: number, content: string) {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+    const headers = authResult.headers;
     
     const response = await fetch(`${BACKEND_URL}/tasks/${taskId}/comments/`, {
       method: 'POST',
@@ -83,7 +84,15 @@ export async function createCommentAction(taskId: number, content: string) {
 
 export async function deleteCommentAction(taskId: number, commentId: number) {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+    const headers = authResult.headers;
     
     const response = await fetch(`${BACKEND_URL}/tasks/${taskId}/comments/${commentId}`, {
       method: 'DELETE',

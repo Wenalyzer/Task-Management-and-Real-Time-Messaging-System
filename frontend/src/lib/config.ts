@@ -1,0 +1,1 @@
+export const BACKEND_URL = process.env.BACKEND_INTERNAL_URL || 'http://task-backend:8000';

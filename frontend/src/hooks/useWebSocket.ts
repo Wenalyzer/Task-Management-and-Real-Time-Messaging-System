@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Comment, WebSocketMessage } from '@/types';
-import { getWebSocketTokenAction } from '@/lib/actions/auth';
 
 /**
  * WebSocket hook 配置介面
@@ -45,24 +44,27 @@ export const useWebSocket = ({
       return;
     }
 
-    // 通過Server Action獲取token
-    const tokenResult = await getWebSocketTokenAction();
-    if (!tokenResult.success) {
-      onError?.('未找到認證令牌');
-      return;
-    }
-
+    // 通過 API 路由獲取專用的 WebSocket token
     try {
+      const response = await fetch('/api/websocket-token');
+      const tokenResult = await response.json();
+      
+      if (!tokenResult.success) {
+        onError?.(tokenResult.error || '未找到認證令牌');
+        return;
+      }
+
       setConnectionStatus('connecting');
       // 使用環境變數或默認值構建WebSocket URL
-      const wsBaseUrl = process.env.NODE_ENV === 'production' 
-        ? `wss://${window.location.host}/ws` 
-        : 'ws://localhost:8000/ws';
-      const wsUrl = `${wsBaseUrl}/tasks/${taskId}?token=${tokenResult.token}`;
+      // 在本地開發環境中，即使是 Docker production build，也要連接到 localhost:8000
+      const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const wsBaseUrl = isLocalDevelopment
+        ? 'ws://localhost:8000' 
+        : `wss://${window.location.host}`;
+      const wsUrl = `${wsBaseUrl}/ws/tasks/${taskId}?token=${tokenResult.token}`;
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log('WebSocket 已連接至任務', taskId);
         setIsConnected(true);
         setConnectionStatus('connected');
         reconnectAttemptsRef.current = 0;
@@ -105,7 +107,6 @@ export const useWebSocket = ({
       };
 
       ws.current.onclose = (event) => {
-        console.log(`WebSocket關閉，代碼: ${event.code}, 原因: ${event.reason}`);
         setIsConnected(false);
         setConnectionStatus('disconnected');
         
@@ -113,7 +114,6 @@ export const useWebSocket = ({
         if (event.code !== 1000 && reconnectAttemptsRef.current < 5) {
           setConnectionStatus('reconnecting');
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000); // 指數退避，最多30秒
-          console.log(`WebSocket 將在 ${delay}ms 後嘗試重連 (第${reconnectAttemptsRef.current + 1}次)`);
           
           reconnectAttemptsRef.current++;
           reconnectTimeoutRef.current = setTimeout(() => {
@@ -180,7 +180,7 @@ export const useWebSocket = ({
     
     const connectIfMounted = async () => {
       if (mounted && taskId) {
-        connect();
+        await connect();
       }
     };
     

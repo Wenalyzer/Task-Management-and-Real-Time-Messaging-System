@@ -53,8 +53,8 @@ export default function CommentSection({ taskId, user }: CommentSectionProps) {
       });
       scrollToBottom();
     },
-    onUserJoined: (_userId, message) => {
-      console.log(message);
+    onUserJoined: () => {
+      // User joined handling (currently not used)
     },
     onUserTyping: (userId, userEmail, isTyping) => {
       setTypingUsers(prev => {

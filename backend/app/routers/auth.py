@@ -184,7 +184,7 @@ async def refresh_token(
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
+            detail="無效的重新整理令牌",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -193,5 +193,21 @@ async def refresh_token(
 async def read_users_me(current_user: User = Depends(get_current_user)):
     """取得當前使用者資訊"""
     return current_user
+
+
+@router.get("/websocket-token")
+async def get_websocket_token(current_user: User = Depends(get_current_user)):
+    """為 WebSocket 連接獲取 token"""
+    # 創建一個短期的 WebSocket token (15分鐘)
+    access_token_expires = timedelta(minutes=15)
+    token = create_access_token(
+        data={"sub": current_user.email, "token_type": "access"}, 
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "token": token,
+        "expires_in": 15 * 60  # 15分鐘，以秒為單位
+    }
 
 

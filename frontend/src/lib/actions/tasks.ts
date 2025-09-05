@@ -1,34 +1,27 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { TaskStatus } from '@/types'
-
-const BACKEND_URL = process.env.BACKEND_INTERNAL_URL || 'http://task-backend:8000';
-
-async function getAuthHeaders() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('access_token')?.value;
-  
-  if (!token) {
-    throw new Error('未登入');
-  }
-
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-}
+import { getSecureAuthHeaders } from './auth'
+import { BACKEND_URL } from '@/lib/config'
 
 export async function getTasksAction(status?: TaskStatus) {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+
     const url = status 
       ? `${BACKEND_URL}/tasks/?status=${status}`
       : `${BACKEND_URL}/tasks/`;
 
     const response = await fetch(url, {
       method: 'GET',
-      headers,
+      headers: authResult.headers,
     });
 
     const data = await response.json();
@@ -48,14 +41,22 @@ export async function getTasksAction(status?: TaskStatus) {
     console.error('Get tasks error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : '任務服務暫時無法使用',
+      error: '任務服務暫時無法使用',
     };
   }
 }
 
 export async function getTaskAction(id: number) {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+    const headers = authResult.headers;
     
     const response = await fetch(`${BACKEND_URL}/tasks/${id}`, {
       method: 'GET',
@@ -86,7 +87,15 @@ export async function getTaskAction(id: number) {
 
 export async function createTaskAction(title: string, description?: string) {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+    const headers = authResult.headers;
     
     const response = await fetch(`${BACKEND_URL}/tasks/`, {
       method: 'POST',
@@ -121,7 +130,15 @@ export async function updateTaskAction(
   updates: { title?: string; description?: string; status?: TaskStatus }
 ) {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+    const headers = authResult.headers;
     
     const response = await fetch(`${BACKEND_URL}/tasks/${id}`, {
       method: 'PUT',
@@ -153,7 +170,15 @@ export async function updateTaskAction(
 
 export async function deleteTaskAction(id: number) {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+    const headers = authResult.headers;
     
     const response = await fetch(`${BACKEND_URL}/tasks/${id}`, {
       method: 'DELETE',
@@ -182,7 +207,15 @@ export async function deleteTaskAction(id: number) {
 
 export async function getTaskStatsAction() {
   try {
-    const headers = await getAuthHeaders();
+    // 使用統一的安全認證
+    const authResult = await getSecureAuthHeaders();
+    if (!authResult.success) {
+      return {
+        success: false,
+        error: authResult.error || '認證失敗'
+      };
+    }
+    const headers = authResult.headers;
     
     const response = await fetch(`${BACKEND_URL}/tasks/stats/overview`, {
       method: 'GET',

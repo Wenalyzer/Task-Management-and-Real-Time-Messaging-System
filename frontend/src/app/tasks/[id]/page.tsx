@@ -33,7 +33,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="text-xl text-red-600 mb-4">{taskResult.error}</div>
+          <div className="text-xl text-red-600 mb-4">{taskResult.error || '任務載入失敗'}</div>
           <Link
             href="/tasks"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
