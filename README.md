@@ -98,22 +98,6 @@ docker compose -f docker-compose.prod.yml up -d
 前端：http://localhost:3000
 ```
 
-## 🎯 交付項目
-
-### 1. 可運行網址
-- **前端應用**：https://task.wenalyzer.xyz/
-- **後端 API**：https://task-backend.wenalyzer.xyz/
-- **API 文檔**：https://task-backend.wenalyzer.xyz/docs（自動生成的文檔）
-
-### 2. 原始碼倉庫
-- **GitHub Repository**：https://github.com/Wenalyzer/Task-Management-and-Real-Time-Messaging-System
-- **容器映像**：GitHub Container Registry 
-
-### 3. 部署架構
-- **前端**：Next.js standalone 模式 + Docker
-- **後端**：FastAPI + Uvicorn + Docker
-- **資料庫**：MySQL 8.4.6 Docker 容器
-
 ## 🔧 遇到的挑戰與解法
 
 ### 1. 密碼加密兼容性問題
