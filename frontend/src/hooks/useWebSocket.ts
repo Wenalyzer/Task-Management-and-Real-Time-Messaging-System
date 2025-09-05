@@ -44,23 +44,29 @@ export const useWebSocket = ({
       return;
     }
 
-    // 通過 API 路由獲取專用的 WebSocket token
+    // 獲取 WebSocket token 和配置
     try {
-      const response = await fetch('/api/websocket-token');
-      const tokenResult = await response.json();
+      const [tokenResponse, configResponse] = await Promise.all([
+        fetch('/api/websocket-token'),
+        fetch('/api/config')
+      ]);
+      
+      const tokenResult = await tokenResponse.json();
+      const configResult = await configResponse.json();
       
       if (!tokenResult.success) {
         onError?.(tokenResult.error || '未找到認證令牌');
         return;
       }
 
+      if (!configResult.success) {
+        onError?.(configResult.error || '無法獲取配置');
+        return;
+      }
+
       setConnectionStatus('connecting');
-      // WebSocket URL 構建
-      const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const wsBaseUrl = isLocalDevelopment
-        ? 'ws://localhost:8000' 
-        : process.env.NEXT_PUBLIC_WS_URL;
-      const wsUrl = `${wsBaseUrl}/ws/tasks/${taskId}?token=${tokenResult.token}`;
+      // 使用動態配置的 WebSocket URL
+      const wsUrl = `${configResult.websocketUrl}/ws/tasks/${taskId}?token=${tokenResult.token}`;
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {

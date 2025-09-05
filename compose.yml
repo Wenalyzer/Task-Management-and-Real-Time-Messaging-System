@@ -61,6 +61,8 @@ services:
       - .env
     environment:
       - TZ=${TZ}
+      - BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL:-http://task-backend:8000}
+      - WEBSOCKET_URL=${WEBSOCKET_URL:-ws://localhost:8000}
     ports:
       - "${FRONTEND_PORT}:3000"
     depends_on:
