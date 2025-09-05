@@ -55,12 +55,11 @@ export const useWebSocket = ({
       }
 
       setConnectionStatus('connecting');
-      // 使用環境變數或默認值構建WebSocket URL
-      // 在本地開發環境中，即使是 Docker production build，也要連接到 localhost:8000
+      // WebSocket URL 構建
       const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const wsBaseUrl = isLocalDevelopment
         ? 'ws://localhost:8000' 
-        : `wss://${window.location.host}`;
+        : process.env.NEXT_PUBLIC_WS_URL;
       const wsUrl = `${wsBaseUrl}/ws/tasks/${taskId}?token=${tokenResult.token}`;
       ws.current = new WebSocket(wsUrl);
 
