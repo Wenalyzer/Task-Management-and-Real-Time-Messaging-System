@@ -17,13 +17,11 @@ interface TaskDetailClientProps {
 
 export default function TaskDetailClient({ task, user }: TaskDetailClientProps) {
   const statusColors = {
-    pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
     completed: 'bg-green-100 text-green-800 border-green-200'
   };
 
   const statusLabels = {
-    pending: '待處理',
     in_progress: '進行中',
     completed: '已完成'
   };

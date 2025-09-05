@@ -28,7 +28,6 @@ interface Stats {
   total: number;
   completed: number;
   in_progress: number;
-  pending: number;
 }
 
 interface TasksClientProps {

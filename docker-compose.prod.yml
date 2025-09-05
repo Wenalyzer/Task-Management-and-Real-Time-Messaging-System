@@ -1,0 +1,72 @@
+services:
+  mysql:
+    image: mysql:8.4.6
+    container_name: task-mysql
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone='${MYSQL_TIMEZONE}'
+    networks:
+      - task-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$MYSQL_USER", "-p$MYSQL_PASSWORD"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+      start_period: 40s
+
+  backend:
+    image: ghcr.io/wenalyzer/task-management-and-real-time-messaging-system-backend:latest
+    container_name: task-backend
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
+      - ENVIRONMENT=${ENVIRONMENT}
+    ports:
+      - "${BACKEND_PORT}:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - task-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    image: ghcr.io/wenalyzer/task-management-and-real-time-messaging-system-frontend:latest
+    container_name: task-frontend
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL:-http://task-backend:8000}
+      - WEBSOCKET_URL=${WEBSOCKET_URL}
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - task-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  task-network:
+    driver: bridge

@@ -51,7 +51,7 @@ export default async function TasksPage() {
       <div className="container mx-auto px-4 py-8">
         <TasksClient 
           initialTasks={tasksResult.success ? tasksResult.data : []}
-          initialStats={statsResult.success ? statsResult.data : { total: 0, completed: 0, in_progress: 0, pending: 0 }}
+          initialStats={statsResult.success ? statsResult.data : { total: 0, completed: 0, in_progress: 0 }}
         />
       </div>
     </div>

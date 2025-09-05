@@ -267,5 +267,3 @@ test-results/
 # Temporary files
 *.tmp
 *.temp
-
-docker-compose.prod.yml
